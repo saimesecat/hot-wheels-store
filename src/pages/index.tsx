@@ -1,114 +1,118 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+// src/pages/admin/index.tsx
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import { Dialog } from '@headlessui/react'
+import { AdminLayout, View } from '@/components/AdminLayout'
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const apiKey = process.env.NEXT_PUBLIC_API_KEY ?? 'secret-api-key'
 
-export default function Home() {
+export default function AdminPage() {
+  const [view, setView] = useState<View>('dashboard')
+  const [loading, setLoading] = useState(false)
+  const [data, setData] = useState<{
+    products: any[]
+    sellers: any[]
+    orders: any[]
+    logs: any[]
+  }>({ products: [], sellers: [], orders: [], logs: [] })
+  const [detail, setDetail] = useState<any>(null)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      try {
+        const [p, s, o, l] = await Promise.all([
+          axios.get('/api/products',      { headers: { 'x-api-key': apiKey } }),
+          axios.get('/api/sellers',       { headers: { 'x-api-key': apiKey } }),
+          axios.get('/api/orders',        { headers: { 'x-api-key': apiKey } }),
+          axios.get('/api/activity-logs', { headers: { 'x-api-key': apiKey } }),
+        ])
+        setData({
+          products: p.data,
+          sellers:  s.data,
+          orders:   o.data,
+          logs:     l.data,
+        })
+      } catch {
+        alert('Failed to load data')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  const summaries: { key: View; title: string; value: number }[] = [
+    { key: 'products', title: 'Products', value: data.products.length },
+    { key: 'sellers',  title: 'Sellers',  value: data.sellers.length },
+    { key: 'orders',   title: 'Orders',   value: data.orders.length },
+    { key: 'logs',     title: 'Activity', value: data.logs.length },
+  ]
+
   return (
-    <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <AdminLayout view={view} setView={setView}>
+      {loading ? (
+        <p className="text-center mt-20">Loading…</p>
+      ) : view === 'dashboard' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {summaries.map(({ key, title, value }) => (
+            <div
+              key={key}
+              className="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 flex flex-col items-start justify-center cursor-pointer hover:scale-[1.02] transition"
+              onClick={() => setView(key)}
+            >
+              <p className="text-sm uppercase text-gray-600 dark:text-gray-400">{title}</p>
+              <p className="text-3xl font-bold">{value}</p>
+            </div>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      ) : (
+        <section className="space-y-4">
+          <h1 className="text-2xl font-semibold capitalize">{view}</h1>
+          <ul className="bg-white dark:bg-gray-800 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
+            {data[view].map((item: any) => (
+              <li
+                key={item.id}
+                className="py-3 px-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 rounded cursor-pointer"
+                onClick={() => { setDetail(item); setOpen(true) }}
+              >
+                <span>
+                  {item.name ?? item.buyerName ?? item.action}
+                </span>
+                <button className="text-accent hover:underline text-sm">
+                  Details
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        className="fixed inset-0 z-50 overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="fixed inset-y-0 right-0 w-full sm:max-w-md bg-secondary dark:bg-primary p-6 overflow-auto">
+          <Dialog.Panel>
+            <Dialog.Title className="text-xl font-semibold mb-4">
+              Details
+            </Dialog.Title>
+            <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm whitespace-pre-wrap">
+              {JSON.stringify(detail, null, 2)}
+            </pre>
+            <button
+              onClick={() => setOpen(false)}
+              className="mt-4 px-4 py-2 bg-accent text-white rounded hover:bg-opacity-90"
+            >
+              Close
+            </button>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+    </AdminLayout>
+  )
 }

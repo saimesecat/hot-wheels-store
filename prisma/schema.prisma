@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Seller {
+  id         String      @id @default(uuid())
+  name       String
+  whatsapp   String
+  profilePic String?
+  location   String?
+  bio        String?
+  isApproved Boolean     @default(false)
+  products   Product[]
+  orderItems OrderItem[] // <-- Added this line
+  createdAt  DateTime    @default(now())
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String   // Will be hashed in production
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  brand       String
+  yearSeries  Int?
+  yearCar     Int?
+  modelCode   String
+  color       String
+  condition   String      // e.g., "mint", "damaged card", "open"
+  priceINR    Int
+  priceKWD    Int?
+  quantity    Int
+  description String?
+  tags        String[]
+  sku         String?     @unique
+  images      Image[]
+  seller      Seller      @relation(fields: [sellerId], references: [id])
+  sellerId    String
+  orderItems  OrderItem[] // <-- Added this line
+  createdAt   DateTime    @default(now())
+}
+
+model Image {
+  id        String   @id @default(uuid())
+  url       String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  buyerName   String
+  buyerPhone  String
+  address     String
+  pincode     String
+  landmark    String?
+  paymentType String      // "COD" or "UPI"
+  status      String      // e.g., "pending", "confirmed", "shipped"
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  seller    Seller   @relation(fields: [sellerId], references: [id])
+  sellerId  String
+  quantity  Int
+  price     Int
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  action      String
+  entityId    String
+  entityType  String
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("user")  // Add this line
+  createdAt DateTime @default(now())
+}
